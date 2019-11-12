@@ -1262,21 +1262,21 @@ The only real difference is the `toTenant` method implementation:
 ----
 @Component
 public class TenantRepository {
-    @Autowired
-    private AuthenticationProperties properties;
+	@Autowired
+	private AuthenticationProperties properties;
 
-    /**
-     * return issuer location
-     *
-     * @param tenant
-     * @return
-     */
-    public String get(String tenant) {
-        if (Arrays.asList(properties.getTenants()).contains(tenant)) {
-            return tenant;
-        }
-        return null;
-    }
+	/**
+	* return issuer location
+	*
+	* @param tenant
+	* @return
+	*/
+	public String get(String tenant) {
+		if (Arrays.asList(properties.getTenants()).contains(tenant)) {
+    			return tenant;
+		}
+		return null;
+	}
 }
 ----
 An example source for a tenant, the repository check and return the tenant from a tenant whitelist in the properties.
@@ -1286,9 +1286,9 @@ An example source for a tenant, the repository check and return the tenant from 
 @Component
 public class TenantAuthenticationManagerResolver implements AuthenticationManagerResolver<HttpServletRequest> {
 	private final BearerTokenResolver resolver = new DefaultBearerTokenResolver();
-	private final TenantRepository tenants; <1>
+	private final TenantRepository tenants;<1>
 
-	private final Map<String, AuthenticationManager> authenticationManagers = new ConcurrentHashMap<>(); <2>
+	private final Map<String, AuthenticationManager> authenticationManagers = new ConcurrentHashMap<>();<2>
 
 	public TenantAuthenticationManagerResolver(TenantRepository tenants) {
 		this.tenants = tenants;
@@ -1296,23 +1296,23 @@ public class TenantAuthenticationManagerResolver implements AuthenticationManage
 
 	@Override
 	public AuthenticationManager resolve(HttpServletRequest request) {
-		return this.authenticationManagers.computeIfAbsent(toTenant(request), this::fromTenant); <3>
+		return this.authenticationManagers.computeIfAbsent(toTenant(request), this::fromTenant);
 	}
 
 	private String toTenant(HttpServletRequest request) {
 		try {
-			String token = this.resolver.resolve(request);
-			return (String) JWTParser.parse(token).getJWTClaimsSet().getIssuer();
+    			String token = this.resolver.resolve(request);
+    			return JWTParser.parse(token).getJWTClaimsSet().getIssuer();
 		} catch (Exception e) {
-			throw new IllegalArgumentException(e);
+    			throw new IllegalArgumentException(e);
 		}
 	}
 
 	private AuthenticationManager fromTenant(String tenant) {
-		return Optional.ofNullable(this.tenants.get(tenant)) <3>
-				.map(JwtDecoders::fromIssuerLocation) <4>
-				.map(JwtAuthenticationProvider::new)
-				.orElseThrow(() -> new IllegalArgumentException("unknown tenant"))::authenticate;
+		return Optional.ofNullable(this.tenants.get(tenant))<3>
+			.map(JwtDecoders::fromIssuerLocation)<4>
+			.map(JwtAuthenticationProvider::new)
+			.orElseThrow(() -> new IllegalArgumentException("unknown tenant"))::authenticate;
 	}
 }
 ----
@@ -1341,39 +1341,39 @@ This extra parsing can be alleviated by configuring the `JwtDecoder` directly wi
 ----
 @Component
 public class TenantJWSKeySelector
-        implements JWTClaimsSetAwareJWSKeySelector<SecurityContext> {
+	implements JWTClaimsSetAwareJWSKeySelector<SecurityContext> {
 
-    private TenantRepository tenantRepository;
-    private final Map<String, JWSKeySelector<SecurityContext>> selectors = new ConcurrentHashMap<>();
+	private TenantRepository tenantRepository;<1>
+	private final Map<String, JWSKeySelector<SecurityContext>> selectors = new ConcurrentHashMap<>();<2>
 
-    public TenantJWSKeySelector(TenantRepository tenants) {
-        this.tenantRepository = tenants;
-    }
+	public TenantJWSKeySelector(TenantRepository tenants) {
+		this.tenantRepository = tenants;
+	}
 
-    @Override
-    public List<? extends Key> selectKeys(JWSHeader jwsHeader, JWTClaimsSet jwtClaimsSet, SecurityContext securityContext)
-            throws KeySourceException {
-        return this.selectors.computeIfAbsent(toTenant(jwtClaimsSet), this::fromTenant)
-                .selectJWSKeys(jwsHeader, securityContext);
-    }
+	@Override
+	public List<? extends Key> selectKeys(JWSHeader jwsHeader, JWTClaimsSet jwtClaimsSet, SecurityContext securityContext)
+    		throws KeySourceException {
+		return this.selectors.computeIfAbsent(toTenant(jwtClaimsSet), this::fromTenant)
+			.selectJWSKeys(jwsHeader, securityContext);
+	}
 
-    private String toTenant(JWTClaimsSet claimSet) {
-        return (String) claimSet.getClaim("iss");
-    }
+	private String toTenant(JWTClaimsSet claimSet) {
+		return (String) claimSet.getClaim("iss");
+	}
 
-    private JWSKeySelector<SecurityContext> fromTenant(String tenant) {
-        return Optional.ofNullable(this.tenantRepository.get(tenant))
-                .map(this::fromUri)
-                .orElseThrow(() -> new IllegalArgumentException("unknown tenant"));
-    }
+	private JWSKeySelector<SecurityContext> fromTenant(String tenant) {
+		return Optional.ofNullable(this.tenantRepository.get(tenant))<3>
+			.map(this::fromUri)
+			.orElseThrow(() -> new IllegalArgumentException("unknown tenant"));
+	}
 
-    private JWSKeySelector<SecurityContext> fromUri(String uri) {
-        try {
-            return JWSAlgorithmFamilyJWSKeySelector.fromJWKSetURL(new URL(uri));
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
+	private JWSKeySelector<SecurityContext> fromUri(String uri) {
+		try {
+    			return JWSAlgorithmFamilyJWSKeySelector.fromJWKSetURL(new URL(uri));<4>
+		} catch (Exception e) {
+    			throw new IllegalArgumentException(e);
+		}
+	}
 }
 ----
 <1> A hypothetical source for tenant information
@@ -1391,13 +1391,13 @@ Next, we can construct a `JWTProcessor`:
 
 [source,java]
 ----
-    @Bean
-    JWTProcessor jwtProcessor(TenantJWSKeySelector keySelector) {
-        ConfigurableJWTProcessor<SecurityContext> jwtProcessor =
-                new DefaultJWTProcessor<>();
-        jwtProcessor.setJWTClaimsSetAwareJWSKeySelector(keySelector);
-        return jwtProcessor;
-    }
+@Bean
+JWTProcessor jwtProcessor(TenantJWSKeySelector keySelector) {
+	ConfigurableJWTProcessor<SecurityContext> jwtProcessor =
+		new DefaultJWTProcessor<>();
+	jwtProcessor.setJWTClaimsSetAwareJWSKeySelector(keySelector);
+	return jwtProcessor;
+}
 ----
 
 As you are already seeing, the trade-off for moving tenant-awareness down to this level is more configuration.
@@ -1410,28 +1410,28 @@ But, since the issuer may be different per JWT, then you'll need a tenant-aware 
 ----
 @Component
 public class TenantJwtIssuerValidator implements OAuth2TokenValidator<Jwt> {
-    private final TenantRepository tenants;
-    private final Map<String, JwtIssuerValidator> validators = new ConcurrentHashMap<>();
+	private final TenantRepository tenants;
+	private final Map<String, JwtIssuerValidator> validators = new ConcurrentHashMap<>();
 
-    public TenantJwtIssuerValidator(TenantRepository tenants) {
-        this.tenants = tenants;
-    }
+	public TenantJwtIssuerValidator(TenantRepository tenants) {
+		this.tenants = tenants;
+	}
 
-    @Override
-    public OAuth2TokenValidatorResult validate(Jwt token) {
-        return this.validators.computeIfAbsent(toTenant(token), this::fromTenant)
-                .validate(token);
-    }
+	@Override
+	public OAuth2TokenValidatorResult validate(Jwt token) {
+		return this.validators.computeIfAbsent(toTenant(token), this::fromTenant)
+			.validate(token);
+	}
 
-    private String toTenant(Jwt jwt) {
-        return jwt.getIssuer().toString();
-    }
+	private String toTenant(Jwt jwt) {
+		return jwt.getIssuer().toString();
+	}
 
-    private JwtIssuerValidator fromTenant(String tenant) {
-        return Optional.ofNullable(this.tenants.get(tenant))
-                .map(JwtIssuerValidator::new)
-                .orElseThrow(() -> new IllegalArgumentException("unknown tenant"));
-    }
+	private JwtIssuerValidator fromTenant(String tenant) {
+		return Optional.ofNullable(this.tenants.get(tenant))
+			.map(JwtIssuerValidator::new)
+			.orElseThrow(() -> new IllegalArgumentException("unknown tenant"));
+	}
 }
 ----
 
@@ -1439,14 +1439,14 @@ Now that we have a tenant-aware processor and a tenant-aware validator, we can p
 
 [source,java]
 ----
-    @Bean
-    JwtDecoder jwtDecoder(JWTProcessor<SecurityContext> jwtProcessor, OAuth2TokenValidator<Jwt> jwtValidator) {
-        NimbusJwtDecoder decoder = new NimbusJwtDecoder(jwtProcessor);
-        OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>
-                (JwtValidators.createDefault(), jwtValidator);
-        decoder.setJwtValidator(validator);
-        return decoder;
-    }
+@Bean
+JwtDecoder jwtDecoder(JWTProcessor<SecurityContext> jwtProcessor, OAuth2TokenValidator<Jwt> jwtValidator) {
+	NimbusJwtDecoder decoder = new NimbusJwtDecoder(jwtProcessor);
+	OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>
+		(JwtValidators.createDefault(), jwtValidator);
+	decoder.setJwtValidator(validator);
+	return decoder;
+}
 ----
 
 We've finished talking about resolving the tenant.
