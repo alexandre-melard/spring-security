@@ -1230,9 +1230,9 @@ public class TenantAuthenticationManagerResolver
 
 	private AuthenticationManager fromTenant(String tenant) {
 		return Optional.ofNullable(this.tenants.get(tenant)) <3>
-			.map(JwtDecoders::fromIssuerLocation) <4>
-			.map(JwtAuthenticationProvider::new)
-			.orElseThrow(() -> new IllegalArgumentException("unknown tenant"))::authenticate;
+				.map(JwtDecoders::fromIssuerLocation) <4>
+				.map(JwtAuthenticationProvider::new)
+				.orElseThrow(() -> new IllegalArgumentException("unknown tenant"))::authenticate;
 	}
 }
 ----
@@ -1304,7 +1304,7 @@ public class TenantAuthenticationManagerResolver implements AuthenticationManage
 			String token = this.resolver.resolve(request);
 			return JWTParser.parse(token).getJWTClaimsSet().getIssuer();
 		} catch (Exception e) {
-    			throw new IllegalArgumentException(e);
+			throw new IllegalArgumentException(e);
 		}
 	}
 
@@ -1343,7 +1343,7 @@ This extra parsing can be alleviated by configuring the `JwtDecoder` directly wi
 public class TenantJWSKeySelector
 	implements JWTClaimsSetAwareJWSKeySelector<SecurityContext> {
 
-	private TenantRepository tenantRepository; <1>
+	private final TenantRepository tenantRepository; <1>
 	private final Map<String, JWSKeySelector<SecurityContext>> selectors = new ConcurrentHashMap<>(); <2>
 
 	public TenantJWSKeySelector(TenantRepository tenants) {
@@ -1352,9 +1352,9 @@ public class TenantJWSKeySelector
 
 	@Override
 	public List<? extends Key> selectKeys(JWSHeader jwsHeader, JWTClaimsSet jwtClaimsSet, SecurityContext securityContext)
-	    		throws KeySourceException {
+			throws KeySourceException {
 		return this.selectors.computeIfAbsent(toTenant(jwtClaimsSet), this::fromTenant)
-			.selectJWSKeys(jwsHeader, securityContext);
+				.selectJWSKeys(jwsHeader, securityContext);
 	}
 
 	private String toTenant(JWTClaimsSet claimSet) {
