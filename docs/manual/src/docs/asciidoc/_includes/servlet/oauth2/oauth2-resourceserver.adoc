@@ -1286,9 +1286,9 @@ An example source for a tenant, the repository check and return the tenant from 
 @Component
 public class TenantAuthenticationManagerResolver implements AuthenticationManagerResolver<HttpServletRequest> {
 	private final BearerTokenResolver resolver = new DefaultBearerTokenResolver();
-	private final TenantRepository tenants;<1>
+	private final TenantRepository tenants; <1>
 
-	private final Map<String, AuthenticationManager> authenticationManagers = new ConcurrentHashMap<>();<2>
+	private final Map<String, AuthenticationManager> authenticationManagers = new ConcurrentHashMap<>(); <2>
 
 	public TenantAuthenticationManagerResolver(TenantRepository tenants) {
 		this.tenants = tenants;
@@ -1309,8 +1309,8 @@ public class TenantAuthenticationManagerResolver implements AuthenticationManage
 	}
 
 	private AuthenticationManager fromTenant(String tenant) {
-		return Optional.ofNullable(this.tenants.get(tenant))<3>
-			.map(JwtDecoders::fromIssuerLocation)<4>
+		return Optional.ofNullable(this.tenants.get(tenant)) <3>
+			.map(JwtDecoders::fromIssuerLocation) <4>
 			.map(JwtAuthenticationProvider::new)
 			.orElseThrow(() -> new IllegalArgumentException("unknown tenant"))::authenticate;
 	}
@@ -1343,8 +1343,8 @@ This extra parsing can be alleviated by configuring the `JwtDecoder` directly wi
 public class TenantJWSKeySelector
 	implements JWTClaimsSetAwareJWSKeySelector<SecurityContext> {
 
-	private TenantRepository tenantRepository;<1>
-	private final Map<String, JWSKeySelector<SecurityContext>> selectors = new ConcurrentHashMap<>();<2>
+	private TenantRepository tenantRepository; <1>
+	private final Map<String, JWSKeySelector<SecurityContext>> selectors = new ConcurrentHashMap<>(); <2>
 
 	public TenantJWSKeySelector(TenantRepository tenants) {
 		this.tenantRepository = tenants;
@@ -1362,14 +1362,14 @@ public class TenantJWSKeySelector
 	}
 
 	private JWSKeySelector<SecurityContext> fromTenant(String tenant) {
-		return Optional.ofNullable(this.tenantRepository.get(tenant))<3>
+		return Optional.ofNullable(this.tenantRepository.get(tenant)) <3>
 			.map(this::fromUri)
 			.orElseThrow(() -> new IllegalArgumentException("unknown tenant"));
 	}
 
 	private JWSKeySelector<SecurityContext> fromUri(String uri) {
 		try {
-    			return JWSAlgorithmFamilyJWSKeySelector.fromJWKSetURL(new URL(uri));<4>
+    			return JWSAlgorithmFamilyJWSKeySelector.fromJWKSetURL(new URL(uri)); <4>
 		} catch (Exception e) {
     			throw new IllegalArgumentException(e);
 		}
